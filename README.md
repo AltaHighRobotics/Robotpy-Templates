@@ -14,8 +14,8 @@ To install the proper robotpy packages for this robot, refer to the [robotpy ins
 ## Tank Bot
 **We do not have a template for this robot yet**
 
-
-### Use
+___
+## Use
 Download the zip, **extract the folder** and then enter the `/robot` folder within your downloaded robot folder. You can use either vscode's built-in terminal or your system terminal to test it out by running:
 ```python
 robotpy test
@@ -24,3 +24,6 @@ OR
 ```python
 python3 -m robotpy test
 ```
+___
+## WIP
+Adding options for virtual environment installation, adding tank bot (will come much later)
