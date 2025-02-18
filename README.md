@@ -24,6 +24,7 @@ OR
 ```python
 python3 -m robotpy test
 ```
+After you confirm that the template works with the tests, you can go ahead and use the sample code that is either commented out or in the notes
 ___
 ## WIP
 Adding options for virtual environment installation, adding tank bot (will come much later)
