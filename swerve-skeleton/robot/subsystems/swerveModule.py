@@ -9,9 +9,10 @@ import phoenix5 as ctre
 import constants
 
 
-kWheelRadius = 0.0508
-kModuleMaxAngularVelocity = math.pi
-kModuleMaxAngularAcceleration = math.tau
+from constants import MODULE_MAX_ANGULAR_VELOCITY 
+from constants import MODULE_MAX_ANGULAR_ACCELERATION 
+from constants import WHEEL_RADIUS 
+from constants import SWERVE_TURN_GEAR_RATIO
 
 class SwerveModule:
     """
@@ -19,15 +20,15 @@ class SwerveModule:
     """
     
     def __init__(self, driveid: int, steerid: int, kP: float, kI: float, kD: float):
-        self.drive = ctre.WPI_TalonSRX(driveid)
+        self.drive = ctre.WPI_BaseMotorController(driveid, "talonfx")
         self.turn = rev.SparkMax(steerid, rev.SparkLowLevel.MotorType.kBrushless)
         self.turnEncoder = self.turn.getEncoder() # NOTE: this is a relative encoder--wheels must be zeroed BEFORE turning on!
         
         self.turningPIDController = wpimath.controller.ProfiledPIDController(
             kP, kI, kD,
             wpimath.trajectory.TrapezoidProfile.Constraints(
-                kModuleMaxAngularVelocity,
-                kModuleMaxAngularAcceleration,
+                MODULE_MAX_ANGULAR_VELOCITY,
+                MODULE_MAX_ANGULAR_ACCELERATION,
             ),
         ) # Turn PID controller
 
@@ -39,7 +40,7 @@ class SwerveModule:
         self.turningPIDController.enableContinuousInput(-math.pi, math.pi)
 
     def getEncoder(self): # Get the current position of the module
-        return wpimath.geometry.Rotation2d(self.turnEncoder.getPosition() * math.tau * constants.kSwerveTurnGearRatio)
+        return wpimath.geometry.Rotation2d(self.turnEncoder.getPosition() * math.tau * SWERVE_TURN_GEAR_RATIO)
     
     def setMaxOut(self, value: float):
         self.maxOut = value
@@ -57,9 +58,9 @@ class SwerveModule:
 
         # Optimize the reference state to avoid spinning further than 90 degrees
         state = desiredState
-        optimizedState = wpimath.kinematics.SwerveModuleState.optimize(
-            desiredState, encoderRotation
-        )
+        # optimizedState = wpimath.kinematics.SwerveModuleState.optimize(
+        #     desiredState, encoderRotation
+        # )
 
 
 #### THIS IS EDITED OUT
@@ -70,17 +71,26 @@ class SwerveModule:
         # CRASH optimizedState.speed *= math.cos(optimizedState.angle - encoderRotation)
         # CRASH math.cos(optimizedState.angle - encoderRotation)
         # CRASH optimizedState.angle - encoderRotation
-        # CRASH optimizedState.angle
-        encoderRotation
+        # CRASH optimizedState.angle <- FUCK YOU
+        # NOCRASH encoderRotation
+        # CRASH state.speed *= math.cos(state.angle - encoderRotation)
+        # CRASH math.cos(state.angle - encoderRotation)
+        # NOCRASH state.angle
+        # NOCRASH state.angle - encoderRotation
+        # NOCRASH math.cos(3)
+        # CRASH math.cos(state.angle)
+        # CRASH raise Exception(type(state.angle))
+        # NOCRASH print(type(state.angle))
+        state.speed *= (state.angle - encoderRotation).cos()
 
         # Calculate the drive output from the drive PID controller.
         driveOutput = state.speed
 
-        # # Calculate the turning motor output from the turning PID controller.
-        # turnOutput = self.turningPIDController.calculate(
-        #     self.turnEncoder.getPosition() * math.tau * constants.kSwerveTurnGearRatio, state.angle.radians()
-        # )
+        # Calculate the turning motor output from the turning PID controller.
+        turnOutput = self.turningPIDController.calculate(
+            self.turnEncoder.getPosition() * math.tau * SWERVE_TURN_GEAR_RATIO, state.angle.radians()
+        )
 
-        # # Acutually drive!
-        # self.drive.set(max(-self.maxOut, min(driveOutput, self.maxOut)))
-        # self.turn.setVoltage(turnOutput)
+        # Acutually drive!
+        self.drive.set(max(-self.maxOut, min(driveOutput, self.maxOut)))
+        self.turn.setVoltage(turnOutput)
